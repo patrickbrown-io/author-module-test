@@ -1,0 +1,48 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\taxonomy\Entity\Term;
+use Drupal\Core\Url;
+
+
+/**
+ * Implements hook_entity_presave().
+ */
+function ucb_article_author_entity_presave(EntityInterface $entity) {
+  // Check if the entity being saved is of the 'Person Page' content type.
+  if ($entity->getEntityTypeId() === 'node' && $entity->bundle() === 'ucb_person') {
+    // Extract the first and last name from the entity's title.
+    $title = $entity->getTitle();
+    $name_parts = explode(' ', $title);
+    $first_name = reset($name_parts);
+    $last_name = end($name_parts);
+
+    // Create a taxonomy term using the extracted name.
+    $term = Term::create([
+      'vid' => 'authors',
+      'name' => $title,
+      'field_first_name' => [
+        'value' => $first_name,
+      ],
+      'field_last_name' => [
+        'value' => $last_name,
+      ],
+    ]);
+
+    // Save the taxonomy term.
+    $term->save();
+
+    // Generate the URL string for the 'Person Page' entity.
+    $url_string = '/people/' . strtolower($first_name) . '-' . strtolower($last_name);
+
+    // Update the URL of the taxonomy term.
+    $term->field_person_page_url = $url_string;
+
+    // Save the taxonomy term again to update the URL field.
+    $term->save();
+  }
+}
+
+
+?>
+
