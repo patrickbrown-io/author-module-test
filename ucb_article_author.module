@@ -2,47 +2,28 @@
 
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\taxonomy\Entity\Term;
-use Drupal\Core\Url;
-
 
 /**
- * Implements hook_entity_presave().
+ * Implements hook_node_insert().
  */
-function ucb_article_author_entity_presave(EntityInterface $entity) {
-  // Check if the entity being saved is of the 'Person Page' content type.
-  if ($entity->getEntityTypeId() === 'node' && $entity->bundle() === 'ucb_person') {
+function ucb_article_author_node_insert(EntityInterface $node)
+{
+  // Check if the inserted entity is of the 'Person Page' content type.
+  if ($node->getEntityTypeId() === 'node' && $node->bundle() === 'ucb_person') {
+
     // Extract the first and last name from the entity's title.
-    $title = $entity->getTitle();
-    $name_parts = explode(' ', $title);
-    $first_name = reset($name_parts);
-    $last_name = end($name_parts);
+    $title = $node->getTitle();
 
     // Create a taxonomy term using the extracted name.
     $term = Term::create([
-      'vid' => 'authors',
+      'vid' => 'byline',
       'name' => $title,
-      'field_first_name' => [
-        'value' => $first_name,
-      ],
-      'field_last_name' => [
-        'value' => $last_name,
+      'field_author_person_page' => [
+        'target_id' => $node->id(),
       ],
     ]);
 
-    // Save the taxonomy term.
-    $term->save();
-
-    // Generate the URL string for the 'Person Page' entity.
-    $url_string = '/people/' . strtolower($first_name) . '-' . strtolower($last_name);
-
-    // Update the URL of the taxonomy term.
-    $term->field_person_page_url = $url_string;
-
-    // Save the taxonomy term again to update the URL field.
+    // Save the taxonomy term to update the entity reference field.
     $term->save();
   }
 }
-
-
-?>
-
